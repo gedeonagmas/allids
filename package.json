@@ -1,0 +1,32 @@
+{
+  "name": "allids",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:down": "docker-compose down",
+    "dev:admin": "pnpm --filter admin dev",
+    "dev:user": "pnpm --filter user dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --parallel --filter admin --filter user --filter api build",
+    "lint": "pnpm --parallel --filter admin --filter user --filter api lint",
+    "test:api": "pnpm --filter api test"
+  },
+  "workspaces": [
+    "admin",
+    "user",
+    "api"
+  ],
+  "pnpm": {
+    "overrides": {
+      "@inquirer/prompts": "7.3.3",
+      "@types/node": "18.19.50"
+    },
+    "ignoredBuiltDependencies": [
+      "@nestjs/core",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}
