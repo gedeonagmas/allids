@@ -135,6 +135,7 @@ model Organization {
   id                   String           @id @default(uuid())
   name                 String
   address              String?
+  phone                String?          @unique
   organizationType     OrganizationType @map("organization_type")
   contactEmail         String?          @map("contact_email")
   apiKeyHash           String           @unique @map("api_key_hash")

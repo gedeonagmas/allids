@@ -20,13 +20,14 @@ type UserSelect = {
 type OrgSelect = {
   id: string;
   name: string;
+  phone: string | null;
+  username: string | null;
   organizationType: 'BANK' | 'EMBASSY' | 'TRAFFIC_AUTHORITY' | 'OTHER';
   role: 'USER' | 'ADMIN' | 'ORG';
 };
 
 type AdminSelect = {
   id: string;
-  phone: string | null;
   username: string | null;
   role: 'USER' | 'ADMIN' | 'ORG';
 };
@@ -118,6 +119,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         select: {
           id: true,
           name: true,
+          phone: true,
+          username: true,
           organizationType: true,
           role: true,
         },
@@ -130,6 +133,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       return {
         id: org.id,
         name: org.name,
+        phone: org.phone,
+        username: org.username,
         organizationType: org.organizationType,
         role: org.role,
         type: 'org' as const,
@@ -146,7 +151,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         where: { id: sub },
         select: {
           id: true,
-          phone: true,
           username: true,
           role: true,
         },
@@ -158,7 +162,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
       return {
         id: admin.id,
-        phone: admin.phone,
         username: admin.username,
         role: admin.role,
         type: 'admin' as const,
