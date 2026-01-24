@@ -7,9 +7,232 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserStatus {
+  VERIFIED
+  UNVERIFIED
+  FREEZ
+}
+
+enum DocumentType {
+  PASSPORT
+  NATIONAL_ID
+  DRIVER_LICENSE
+}
+
+enum DocumentStatus {
+  VERIFIED
+  REJECTED
+  PENDING
+}
+
+enum OrganizationType {
+  BANK
+  EMBASSY
+  TRAFFIC_AUTHORITY
+  OTHER
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+enum AccessType {
+  FIELDS_ONLY
+  FULL_DOCUMENT
+}
+
+enum PermissionGrantStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum AuditAction {
+  VIEWED
+  REVOKED
+  EXPIRED
+}
+
+enum Role {
+  USER
+  ADMIN
+  ORG
+}
+
+// 1. Users
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String
-  createdAt DateTime @default(now())
+  id           String     @id @default(uuid())
+  phone        String?    @unique
+  username     String?    @unique // For admin login
+  passwordHash String?    @map("password_hash") // For admin login
+  status       UserStatus @default(UNVERIFIED)
+  role         Role       @default(USER)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  documents        Document[]
+  accessRequests   AccessRequest[]
+  permissionGrants PermissionGrant[]
+
+  @@map("users")
+}
+
+// 2. OTP (Authentication)
+model Otp {
+  id          String    @id @default(uuid())
+  phoneNumber String    @map("phone_number")
+  codeHash    String    @map("code_hash")
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([phoneNumber])
+  @@map("otps")
+}
+
+// 3. Documents
+model Document {
+  id                String         @id @default(uuid())
+  userId            String         @map("user_id")
+  type              DocumentType
+  status            DocumentStatus @default(PENDING)
+  issuerCountry     String?        @map("issuer_country")
+  encryptedFilePath String         @map("encrypted_file_path")
+  expiredDate       DateTime?      @map("expired_date")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentFields   DocumentField[]
+  permissionGrants PermissionGrant[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("documents")
+}
+
+// 4. DocumentFields
+model DocumentField {
+  id                  String @id @default(uuid())
+  documentId          String @map("document_id")
+  fieldKey            String @map("field_key")
+  fieldValueEncrypted String @map("field_value_encrypted")
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, fieldKey])
+  @@index([documentId])
+  @@map("document_fields")
+}
+
+// 5. Organizations
+model Organization {
+  id                   String           @id @default(uuid())
+  name                 String
+  address              String?
+  organizationType     OrganizationType @map("organization_type")
+  contactEmail         String?          @map("contact_email")
+  apiKeyHash           String           @unique @map("api_key_hash")
+  allowedDocumentTypes String[]         @map("allowed_document_types") // Array of DocumentType
+  username             String?          @unique // For admin/org login
+  passwordHash         String?          @map("password_hash") // For admin/org login
+  role                 Role             @default(ORG)
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  accessRequests   AccessRequest[]
+  permissionGrants PermissionGrant[]
+
+  @@map("organizations")
+}
+
+// 6. AccessRequests
+model AccessRequest {
+  id              String              @id @default(uuid())
+  organizationId  String              @map("organization_id")
+  userId          String              @map("user_id")
+  documentType    DocumentType        @map("document_type")
+  accessPurpose   String              @map("access_purpose")
+  requestedFields String[]            @default([]) @map("requested_fields") // Array of field keys
+  status          AccessRequestStatus @default(PENDING)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionGrant PermissionGrant?
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@map("access_requests")
+}
+
+// 7. PermissionGrants
+model PermissionGrant {
+  id              String                @id @default(uuid())
+  accessRequestId String                @unique @map("access_request_id")
+  userId          String                @map("user_id")
+  organizationId  String                @map("organization_id")
+  documentId      String                @map("document_id")
+  accessType      AccessType            @map("access_type")
+  allowedFields   String[]              @default([]) @map("allowed_fields") // Array of field keys
+  status          PermissionGrantStatus @default(ACTIVE)
+  grantedAt       DateTime              @default(now()) @map("granted_at")
+  revokedAt       DateTime?             @map("revoked_at")
+  expiresAt       DateTime?             @map("expires_at")
+
+  // Relations
+  accessRequest AccessRequest @relation(fields: [accessRequestId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  accessLinks   AccessLink[]
+  auditLogs     AuditLog[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([documentId])
+  @@index([status])
+  @@map("permission_grants")
+}
+
+// 8. AccessLinks (for one-time full image)
+model AccessLink {
+  id                String   @id @default(uuid())
+  permissionGrantId String   @map("permission_grant_id")
+  token             String   @unique
+  expiresAt         DateTime @map("expires_at")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  // Relations
+  permissionGrant PermissionGrant @relation(fields: [permissionGrantId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([permissionGrantId])
+  @@map("access_links")
+}
+
+// 9. AuditLogs
+model AuditLog {
+  id                String      @id @default(uuid())
+  permissionGrantId String      @map("permission_grant_id")
+  action            AuditAction
+  timestamp         DateTime    @default(now())
+  ipAddress         String?     @map("ip_address")
+
+  // Relations
+  permissionGrant PermissionGrant @relation(fields: [permissionGrantId], references: [id], onDelete: Cascade)
+
+  @@index([permissionGrantId])
+  @@index([timestamp])
+  @@map("audit_logs")
 }

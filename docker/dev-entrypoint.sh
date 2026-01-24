@@ -7,10 +7,10 @@ if [ ! -d node_modules ]; then
   pnpm install --frozen-lockfile
 fi
 
-PRISMA_CLIENT="./node_modules/.prisma/client"
-if [ ! -d "$PRISMA_CLIENT" ]; then
-  echo "Generating Prisma client..."
-  pnpm --filter api run prisma:generate || true
-fi
+echo "Generating Prisma client..."
+cd /workspace/api && pnpm prisma generate || true
+
+echo "Running Prisma migrations..."
+pnpm --filter api run prisma:migrate:deploy || true
 
 exec "$@"
