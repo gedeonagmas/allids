@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./api" },
+    { "path": "./admin" },
+    { "path": "./user" }
+  ],
+  "compilerOptions": {
+    "skipLibCheck": true
+  }
+}
+

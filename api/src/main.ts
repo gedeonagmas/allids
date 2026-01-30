@@ -16,12 +16,19 @@ async function bootstrap() {
   // Enable cookie parser - MUST be before other middleware
   app.use(cookieParser());
 
-  // Enable validation
+  // Enable validation (skip for multipart/form-data)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      skipMissingProperties: false,
+      // Skip validation for multipart/form-data requests
+      skipNullProperties: false,
+      skipUndefinedProperties: false,
     }),
   );
 
