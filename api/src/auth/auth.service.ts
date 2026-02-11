@@ -24,7 +24,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private redis: RedisService,
-  ) {}
+  ) { }
 
   // Internal method to send OTP
   private async sendOtpInternal(phone: string): Promise<string> {
@@ -193,6 +193,7 @@ export class AuthService {
         phone: user.phone,
         role: user.role,
         status: user.status,
+        type: 'user',
       },
       access_token,
     };
@@ -230,7 +231,9 @@ export class AuthService {
           id: org.id,
           name: org.name,
           role: org.role,
+          status: 'VERIFIED',
           organizationType: org.organizationType,
+          type: 'org',
         },
         access_token,
       };
@@ -270,6 +273,8 @@ export class AuthService {
           id: admin.id,
           username: admin.username,
           role: admin.role,
+          status: 'VERIFIED',
+          type: 'admin',
         },
         access_token,
       };
@@ -329,6 +334,8 @@ export class AuthService {
         username: org.username,
         organizationType: org.organizationType,
         role: org.role,
+        status: 'VERIFIED',
+        type: 'org',
       },
       access_token,
     };
@@ -377,6 +384,8 @@ export class AuthService {
         id: admin.id,
         username: admin.username,
         role: admin.role,
+        status: 'VERIFIED',
+        type: 'admin',
       },
       access_token,
     };

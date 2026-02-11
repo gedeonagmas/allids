@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { RegulaService, RegulaVerificationResult } from '../regula/regula.service';
 import { DocumentType, DocumentStatus, Role } from '@prisma/client';
-import { encrypt } from '../utils/encryption.util';
+import { encrypt, decrypt } from '../utils/encryption.util';
 import { storeEncryptedDocument, deleteEncryptedDocument } from '../utils/file-storage.util';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 
@@ -19,7 +19,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly regulaService: RegulaService,
-  ) {}
+  ) { }
 
   /**
    * Check if user has an existing verified document of the same type that hasn't expired
@@ -90,11 +90,11 @@ export class DocumentsService {
       const expiredDate = existingDoc.expiredDate
         ? new Date(existingDoc.expiredDate).toLocaleDateString()
         : 'never';
-      
+
       throw new BadRequestException(
         `You already have a verified ${uploadDto.type} document that is still valid. ` +
-          `Existing document ID: ${existingDoc.id}, expires: ${expiredDate}. ` +
-          `Please wait until the current document expires before uploading a new one.`,
+        `Existing document ID: ${existingDoc.id}, expires: ${expiredDate}. ` +
+        `Please wait until the current document expires before uploading a new one.`,
       );
     }
 
@@ -128,7 +128,7 @@ export class DocumentsService {
 
       // Store encrypted document file
       const filePath = await storeEncryptedDocument(document.id, uploadDto.image);
-      
+
       // Update document with file path
       await (this.prisma as any).document.update({
         where: { id: document.id },
@@ -139,14 +139,14 @@ export class DocumentsService {
       let storedFields: any[] = [];
       if (verificationResult.status === 'success' && verificationResult.fields.length > 0) {
         await this.storeDocumentFields(document.id, verificationResult.fields);
-        
+
         // Fetch stored fields to return in response
         storedFields = await (this.prisma as any).documentField.findMany({
           where: { documentId: document.id },
           select: {
             id: true,
             fieldKey: true,
-            // Note: fieldValueEncrypted is not returned for security
+            fieldValueEncrypted: true,
           },
           orderBy: { fieldKey: 'asc' },
         });
@@ -172,11 +172,11 @@ export class DocumentsService {
       };
     } catch (error: any) {
       this.logger.error(`Error uploading document: ${error.message}`, error.stack);
-      
+
       if (error instanceof BadRequestException || error instanceof ForbiddenException) {
         throw error;
       }
-      
+
       throw new BadRequestException(`Failed to upload document: ${error.message}`);
     }
   }
@@ -271,7 +271,7 @@ export class DocumentsService {
           select: {
             id: true,
             fieldKey: true,
-            // Note: fieldValueEncrypted is not returned for security
+            fieldValueEncrypted: true,
           },
           orderBy: { fieldKey: 'asc' },
         },
@@ -291,9 +291,10 @@ export class DocumentsService {
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,
       fieldsCount: document.documentFields.length,
-      fields: document.documentFields.map((f: any) => ({
+      documentFields: document.documentFields.map((f: any) => ({
         id: f.id,
         fieldKey: f.fieldKey,
+        fieldValue: decrypt(f.fieldValueEncrypted),
       })),
     };
   }
@@ -341,7 +342,7 @@ export class DocumentsService {
     ];
 
     for (const fieldName of possibleFieldNames) {
-      const field = result.fields.find((f) => 
+      const field = result.fields.find((f) =>
         f.fieldName.toLowerCase() === fieldName.toLowerCase()
       );
       if (field?.value) {
@@ -350,11 +351,11 @@ export class DocumentsService {
     }
 
     // Fallback: search for any field containing 'country' or 'issuer'
-    const countryField = result.fields.find((f) => 
+    const countryField = result.fields.find((f) =>
       f.fieldName.toLowerCase().includes('country') ||
       f.fieldName.toLowerCase().includes('issuer')
     );
-    
+
     return countryField?.value || null;
   }
 
@@ -367,7 +368,7 @@ export class DocumentsService {
       f.fieldName.toLowerCase().includes('expiration') ||
       f.fieldName.toLowerCase().includes('expires')
     );
-    
+
     if (!expiryField?.value) {
       return null;
     }
@@ -423,7 +424,7 @@ export class DocumentsService {
     if (existingDocument.type !== uploadDto.type) {
       throw new BadRequestException(
         `Cannot change document type. Existing document is ${existingDocument.type}, but new document is ${uploadDto.type}. ` +
-          `Please upload a new document instead of replacing this one.`,
+        `Please upload a new document instead of replacing this one.`,
       );
     }
 
@@ -473,7 +474,7 @@ export class DocumentsService {
       let storedFields: any[] = [];
       if (verificationResult.status === 'success' && verificationResult.fields.length > 0) {
         await this.storeDocumentFields(documentId, verificationResult.fields);
-        
+
         // Fetch stored fields to return in response
         storedFields = await (this.prisma as any).documentField.findMany({
           where: { documentId },
@@ -506,11 +507,11 @@ export class DocumentsService {
       };
     } catch (error: any) {
       this.logger.error(`Error replacing document: ${error.message}`, error.stack);
-      
+
       if (error instanceof BadRequestException || error instanceof ForbiddenException || error instanceof NotFoundException) {
         throw error;
       }
-      
+
       throw new BadRequestException(`Failed to replace document: ${error.message}`);
     }
   }
@@ -575,11 +576,11 @@ export class DocumentsService {
       };
     } catch (error: any) {
       this.logger.error(`Error deleting document: ${error.message}`, error.stack);
-      
+
       if (error instanceof NotFoundException || error instanceof ForbiddenException) {
         throw error;
       }
-      
+
       throw new BadRequestException(`Failed to delete document: ${error.message}`);
     }
   }

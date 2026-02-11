@@ -40,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         (request: Request): string | null => {
           // Try to get token from cookies first
           let token: string | null = null;
-          
+
           // Method 1: Direct access to parsed cookies (cookie-parser should have done this)
           if (request?.cookies?.['access_token']) {
             token = request.cookies['access_token'] as string;
@@ -59,7 +59,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             }, {});
             token = cookies['access_token'] || null;
           }
-          
+
           // Method 3: Try Authorization header as fallback
           if (!token && request?.headers?.authorization) {
             const authHeader = request.headers.authorization;
@@ -67,7 +67,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
               token = authHeader.substring(7);
             }
           }
-          
+
           return token;
         },
         ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -137,6 +137,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         username: org.username,
         organizationType: org.organizationType,
         role: org.role,
+        status: 'VERIFIED' as const,
         type: 'org' as const,
       };
     } else if (type === 'admin') {
@@ -164,6 +165,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         id: admin.id,
         username: admin.username,
         role: admin.role,
+        status: 'VERIFIED' as const,
         type: 'admin' as const,
       };
     }

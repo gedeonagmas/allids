@@ -1,115 +1,73 @@
 "use client";
 
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
+import Link from "next/link";
 import { Card } from "../components/ui/card";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
-
-const fetchUsers = async () => {
-  const response = await fetch(`${API_URL}/users`);
-  if (!response.ok) {
-    throw new Error("Unable to load user list");
-  }
-  return response.json();
-};
+import { Button } from "../components/ui/button";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
-  const { data, error, isLoading, refetch } = useQuery({
-    queryKey: ["users"],
-    queryFn: fetchUsers,
-    refetchOnWindowFocus: false,
-  });
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
 
-  const friendlyMessage = useMemo(
-    () => ({
-      message: isLoading
-        ? "Warming up your feed..."
-        : error
-        ? "We can't reach the API right now."
-        : "Data delivered via TanStack Query",
-    }),
-    [error, isLoading],
-  );
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'USER') router.push('/dashboard/user');
+      else if (user.role === 'ORG') router.push('/dashboard/org');
+    }
+  }, [user, router]);
+
+  if (isLoading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
 
   return (
-    <main className="min-h-screen bg-white px-6 py-12 dark:bg-zinc-950">
-      <div className="mx-auto flex max-w-4xl flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
-            User Dashboard
-          </p>
-          <h1 className="text-4xl font-semibold text-zinc-900 dark:text-zinc-50">
-            Stay in sync with your team
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-6">
+      <div className="max-w-4xl w-full text-center space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Welcome to <span className="text-blue-600">Allids</span>
           </h1>
-          <p className="text-base text-zinc-600 dark:text-zinc-300">
-            The UI consumes the same Nest API as the admin portal.
+          <p className="text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
+            Your secure digital identity wallet. Manage, verify, and share your documents with ease and privacy.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card title="Status">
-            <div className="flex items-center gap-2">
-              <Badge variant="default">{friendlyMessage.message}</Badge>
+        <div className="grid md:grid-cols-2 gap-8 mt-12">
+          <Card className="p-8 flex flex-col items-center space-y-6 hover:shadow-xl transition-shadow bg-white/50 backdrop-blur-sm dark:bg-zinc-900/50">
+            <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+              <span className="text-3xl">👤</span>
             </div>
-          </Card>
-
-          <Card title="Actions">
-            <Button variant="ghost" onClick={() => refetch()}>
-              Refresh feed
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Personal User</h2>
+              <p className="text-zinc-500 dark:text-zinc-400">
+                Securely store your ID, passport, or driver's license. Share verified details with organizations.
+              </p>
+            </div>
+            <Button asChild className="w-full h-12 text-lg">
+              <Link href="/auth/user/login">Open Wallet</Link>
             </Button>
           </Card>
 
-          <Card title="Members">
-            <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-              {data?.length ?? "—"}
+          <Card className="p-8 flex flex-col items-center space-y-6 hover:shadow-xl transition-shadow bg-white/50 backdrop-blur-sm dark:bg-zinc-900/50">
+            <div className="h-16 w-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center">
+              <span className="text-3xl">🏢</span>
             </div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Profiles sourced from `api/users`
-            </p>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">Organization</h2>
+              <p className="text-zinc-500 dark:text-zinc-400">
+                Request verified identity information and documents from your customers or employees.
+              </p>
+            </div>
+            <div className="flex flex-col w-full gap-3">
+              <Button asChild className="w-full h-12 text-lg">
+                <Link href="/auth/org/login">Org Login</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full h-12 text-lg">
+                <Link href="/auth/org/register">Apply for Account</Link>
+              </Button>
+            </div>
           </Card>
         </div>
-
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-              Community snapshot
-            </h2>
-            {!isLoading && !error && <Badge variant="default">Live</Badge>}
-          </div>
-          {isLoading && (
-            <Card className="bg-zinc-100/60 dark:bg-zinc-900/70">
-              <p className="text-sm text-zinc-600">
-                Hang tight while we fetch the latest members.
-              </p>
-            </Card>
-          )}
-          {error && (
-            <Card className="bg-red-50 text-red-700">
-              <p className="text-sm">
-                Something went wrong with the API. Please try again shortly.
-              </p>
-            </Card>
-          )}
-          <div className="grid gap-4 md:grid-cols-2">
-            {data?.map((user: { id: number; name: string; email: string }) => (
-              <Card key={user.id} className="border-zinc-200 dark:border-zinc-800">
-                <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-                  {user.name}
-                </h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {user.email}
-                </p>
-                <span className="text-xs uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
-                  {user.id}
-                </span>
-              </Card>
-            ))}
-          </div>
-        </section>
       </div>
     </main>
   );
