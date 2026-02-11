@@ -14,14 +14,24 @@ export const api = axios.create({
     },
 });
 
-// Add a response interceptor to handle errors globally
+// Add a response interceptor to handle errors globally and capture tokens
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // If the response contains an access_token in the body, save it to a client-readable cookie
+        // specifically for socket authentication (since the main cookie is httpOnly)
+        if (response.data?.access_token) {
+            document.cookie = `socket_token=${response.data.access_token}; path=/; max-age=604800; sameSite=lax`;
+        }
+        return response;
+    },
     (error) => {
         // Handle session expiry or other global errors here
         if (error.response?.status === 401) {
-            // Potentially redirect to login or clear auth state
             console.error('Session expired or unauthorized');
+            // Clear socket token on 401
+            if (typeof window !== 'undefined') {
+                document.cookie = 'socket_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            }
         }
         return Promise.reject(error);
     }

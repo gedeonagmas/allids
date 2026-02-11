@@ -6,6 +6,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { AuthProvider } from "@/context/auth-context";
+import { SocketProvider } from "@/context/socket-context";
+import { VerificationNotification } from "./verification-notification";
+import { Toaster } from "sonner";
+import { PushNotificationManager } from "./push-notification-manager";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -17,7 +21,12 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {children}
+        <SocketProvider>
+          {children}
+          <VerificationNotification />
+          <PushNotificationManager />
+          <Toaster richColors position="bottom-right" />
+        </SocketProvider>
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

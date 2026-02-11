@@ -50,6 +50,9 @@ enum PermissionGrantStatus {
 }
 
 enum AuditAction {
+  GRANT_CREATED
+  GRANT_REVOKED
+  DATA_ACCESSED
   VIEWED
   REVOKED
   EXPIRED
@@ -69,6 +72,7 @@ model User {
   passwordHash String?    @map("password_hash") // For admin login
   status       UserStatus @default(UNVERIFIED)
   role         Role       @default(USER)
+  fcmToken     String?    @map("fcm_token")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
@@ -143,6 +147,7 @@ model Organization {
   username             String?          @unique // For admin/org login
   passwordHash         String?          @map("password_hash") // For admin/org login
   role                 Role             @default(ORG)
+  fcmToken             String?          @map("fcm_token")
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @updatedAt @map("updated_at")
 
@@ -159,6 +164,7 @@ model AccessRequest {
   organizationId  String              @map("organization_id")
   userId          String              @map("user_id")
   documentType    DocumentType        @map("document_type")
+  accessType      AccessType          @default(FIELDS_ONLY) @map("access_type")
   accessPurpose   String              @map("access_purpose")
   requestedFields String[]            @default([]) @map("requested_fields") // Array of field keys
   status          AccessRequestStatus @default(PENDING)

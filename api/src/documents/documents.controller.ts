@@ -27,7 +27,7 @@ import { Role, DocumentType } from '@prisma/client';
 @Controller('documents')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(private readonly documentsService: DocumentsService) { }
 
   @Post('upload')
   @Roles(Role.USER)
@@ -39,7 +39,7 @@ export class DocumentsController {
         const allowedTypes = /(jpg|jpeg|png|webp)$/i;
         const fileExtension = file.originalname?.split('.').pop()?.toLowerCase() || '';
         const mimeType = file.mimetype || '';
-        
+
         if (
           allowedTypes.test(fileExtension) ||
           mimeType.match(/image\/(jpeg|jpg|png|webp)/i)
@@ -77,8 +77,8 @@ export class DocumentsController {
 
     // Get type and isValid from request body (FileInterceptor processes multipart and puts text fields in req.body)
     const type = req.body?.type;
-    const isValid = req.body?.isValid !== undefined 
-      ? req.body.isValid === 'true' || req.body.isValid === true 
+    const isValid = req.body?.isValid !== undefined
+      ? req.body.isValid === 'true' || req.body.isValid === true
       : undefined;
 
     // Validate document type
@@ -128,6 +128,13 @@ export class DocumentsController {
     return this.documentsService.getDocument(id, user.id, user.role);
   }
 
+  @Get(':id/image')
+  @Roles(Role.USER)
+  async getDocumentImage(@Param('id') id: string, @CurrentUser() user: any) {
+    const imageBase64 = await this.documentsService.getDocumentImage(id, user.id, user.role);
+    return { image: imageBase64 };
+  }
+
   @Put(':id/replace')
   @Roles(Role.USER)
   @HttpCode(HttpStatus.OK)
@@ -138,7 +145,7 @@ export class DocumentsController {
         const allowedTypes = /(jpg|jpeg|png|webp)$/i;
         const fileExtension = file.originalname?.split('.').pop()?.toLowerCase() || '';
         const mimeType = file.mimetype || '';
-        
+
         if (
           allowedTypes.test(fileExtension) ||
           mimeType.match(/image\/(jpeg|jpg|png|webp)/i)
@@ -177,8 +184,8 @@ export class DocumentsController {
 
     // Get type and isValid from request body (FileInterceptor processes multipart and puts text fields in req.body)
     const type = req.body?.type;
-    const isValid = req.body?.isValid !== undefined 
-      ? req.body.isValid === 'true' || req.body.isValid === true 
+    const isValid = req.body?.isValid !== undefined
+      ? req.body.isValid === 'true' || req.body.isValid === true
       : undefined;
 
     // Validate document type

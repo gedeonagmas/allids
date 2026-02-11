@@ -24,7 +24,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @Roles('ADMIN')
@@ -45,10 +45,10 @@ export class UsersController {
     if (!currentUser || !currentUser.id) {
       throw new BadRequestException('User information not available');
     }
-    
+
     // Get the type from the current user (set by JWT strategy)
     const userType = currentUser.type || 'user';
-    
+
     // Try to get fresh data from database based on type
     try {
       const profile = await this.usersService.getProfile(currentUser.id, userType);
@@ -102,6 +102,13 @@ export class UsersController {
   updateProfile(@CurrentUser() currentUser: any, @Body() updateProfileDto: UpdateProfileDto) {
     const userType = currentUser.type || 'user';
     return this.usersService.updateProfile(currentUser.id, updateProfileDto, userType);
+  }
+
+  @Patch('fcm-token')
+  @HttpCode(HttpStatus.OK)
+  updateFcmToken(@CurrentUser() currentUser: any, @Body('token') token: string) {
+    const userType = currentUser.type || 'user';
+    return this.usersService.updateFcmToken(currentUser.id, token, userType);
   }
 
   @Get(':id')

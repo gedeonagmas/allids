@@ -20,7 +20,8 @@ import {
     Globe,
     CheckCircle2,
     AlertCircle,
-    FileText
+    FileText,
+    History
 } from "lucide-react";
 
 export default function UserDashboard() {
@@ -99,12 +100,20 @@ export default function UserDashboard() {
                         <h1 className="text-4xl font-extrabold tracking-tight">Your Identity Wallet</h1>
                         <p className="text-zinc-500 text-lg">Manage your verified documents and sharing permissions.</p>
                     </div>
-                    <Button asChild className="h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 gap-2">
-                        <Link href="/dashboard/user/upload">
-                            <Plus size={20} />
-                            Add New Document
-                        </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-4">
+                        <Button asChild variant="outline" className="h-12 px-6 rounded-xl gap-2">
+                            <Link href="/dashboard/user/history">
+                                <History size={20} className="text-blue-600" />
+                                Sharing History
+                            </Link>
+                        </Button>
+                        <Button asChild className="h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 gap-2">
+                            <Link href="/dashboard/user/upload">
+                                <Plus size={20} />
+                                Add New Document
+                            </Link>
+                        </Button>
+                    </div>
                 </section>
 
                 {/* Verified Documents (Wallet) */}

@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   create(createUserDto: CreateUserDto) {
     return (this.prisma as any).client?.user?.create({ data: createUserDto });
@@ -220,6 +220,21 @@ export class UsersService {
       }
 
       return updatedUser;
+    }
+  }
+
+  async updateFcmToken(userId: string, token: string, type: 'user' | 'admin' | 'org' = 'user') {
+    const prismaClient = (this.prisma as any).client;
+    if (type === 'org') {
+      return prismaClient?.organization.update({
+        where: { id: userId },
+        data: { fcmToken: token },
+      });
+    } else {
+      return prismaClient?.user.update({
+        where: { id: userId },
+        data: { fcmToken: token },
+      });
     }
   }
 

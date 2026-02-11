@@ -75,6 +75,7 @@ export class AuthController {
 
     return {
       user: result.user,
+      access_token: result.access_token,
       message: 'OTP verified successfully',
     };
   }
@@ -97,6 +98,7 @@ export class AuthController {
 
     return {
       user: result.user,
+      access_token: result.access_token,
       message: 'Organization registered successfully',
     };
   }
@@ -119,6 +121,7 @@ export class AuthController {
 
     return {
       user: result.user,
+      access_token: result.access_token,
       message: 'Admin registered successfully',
     };
   }
@@ -141,6 +144,7 @@ export class AuthController {
 
     return {
       user: result.user,
+      access_token: result.access_token,
       message: 'Login successful',
     };
   }

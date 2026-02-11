@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegulaService, RegulaVerificationResult } from '../regula/regula.service';
 import { DocumentType, DocumentStatus, Role } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption.util';
-import { storeEncryptedDocument, deleteEncryptedDocument } from '../utils/file-storage.util';
+import { storeEncryptedDocument, deleteEncryptedDocument, retrieveEncryptedDocument } from '../utils/file-storage.util';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 
 @Injectable()
@@ -297,6 +297,37 @@ export class DocumentsService {
         fieldValue: decrypt(f.fieldValueEncrypted),
       })),
     };
+  }
+
+  /**
+   * Get document image (decrypted)
+   */
+  async getDocumentImage(documentId: string, userId: string, userRole: Role) {
+    if (userRole !== Role.USER) {
+      throw new ForbiddenException('Only users with USER role can view document images');
+    }
+
+    const document = await (this.prisma as any).document.findFirst({
+      where: {
+        id: documentId,
+        userId,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    if (!document.encryptedFilePath) {
+      throw new BadRequestException('No image file associated with this document');
+    }
+
+    try {
+      return await retrieveEncryptedDocument(document.encryptedFilePath);
+    } catch (error) {
+      this.logger.error(`Failed to retrieve image for document ${documentId}: ${error.message}`);
+      throw new BadRequestException('Failed to retrieve document image');
+    }
   }
 
   /**

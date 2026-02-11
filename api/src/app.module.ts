@@ -6,10 +6,12 @@ import { RedisModule } from './redis/redis.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { DocumentsModule } from './documents/documents.module';
+import { NotificationModule } from './notification/notification.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
-  imports: [UsersModule, RedisModule, PrismaModule, AuthModule, DocumentsModule],
+  imports: [UsersModule, RedisModule, PrismaModule, AuthModule, DocumentsModule, NotificationModule, VerificationModule],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
