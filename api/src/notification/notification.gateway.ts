@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
     cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: process.env.FRONTEND_URL || 'http://localhost:3003',
         credentials: true,
     },
     namespace: 'notifications',
