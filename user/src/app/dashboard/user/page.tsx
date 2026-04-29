@@ -23,6 +23,7 @@ import {
     FileText,
     History
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function UserDashboard() {
     const { user, isLoading: isAuthLoading, logout } = useAuth();
@@ -86,6 +87,7 @@ export default function UserDashboard() {
                             <p className="text-sm font-semibold">{user.phone}</p>
                             <p className="text-[10px] uppercase tracking-widest text-zinc-500">Verified Identity</p>
                         </div>
+                        <ThemeToggle />
                         <Button variant="ghost" size="sm" onClick={logout}>
                             <LogOut size={18} className="text-zinc-500" />
                         </Button>

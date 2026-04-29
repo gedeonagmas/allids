@@ -17,6 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { RegisterOrgDto } from './dto/register-org.dto';
 import { RegisterAdminDto } from './dto/register-admin.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { normalizePhoneNumber } from '../utils/phone.util';
 
 @Injectable()
 export class AuthService {
@@ -57,7 +58,7 @@ export class AuthService {
 
   // Request OTP for Users (handles both registration and login)
   async requestOtp(dto: SendOtpDto): Promise<{ message: string; isNewUser: boolean; otp: string }> {
-    const { phone } = dto;
+    const phone = normalizePhoneNumber(dto.phone);
 
     // Check if user already exists
     const prismaClient = (this.prisma as any).client;
@@ -117,7 +118,8 @@ export class AuthService {
   }
 
   async verifyOtp(dto: VerifyOtpDto): Promise<{ user: any; access_token: string }> {
-    const { phone, code } = dto;
+    const phone = normalizePhoneNumber(dto.phone);
+    const { code } = dto;
 
     // Find the most recent OTP for this phone
     const prismaClient = (this.prisma as any).client;

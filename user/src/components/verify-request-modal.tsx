@@ -13,14 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, UserSearch, FileText, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, UserSearch, FileText, CheckCircle2, Globe, Database } from "lucide-react";
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 const DOCUMENT_TYPES = [
     { value: 'PASSPORT', label: 'Passport' },
     { value: 'NATIONAL_ID', label: 'National ID' },
-    { value: 'DRIVERS_LICENSE', label: 'Driver\'s License' },
+    { value: 'DRIVER_LICENSE', label: 'Driver\'s License' },
 ];
 
 const COMMON_FIELDS = [
@@ -45,6 +45,7 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
     const [accessType, setAccessType] = useState<'FIELDS_ONLY' | 'FULL_DOCUMENT'>('FIELDS_ONLY');
     const [purpose, setPurpose] = useState('');
     const [selectedFields, setSelectedFields] = useState<string[]>([]);
+    const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const resetForm = () => {
@@ -52,12 +53,28 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
         setPhone('');
         setPurpose('');
         setSelectedFields([]);
+        setSelectedNetwork(null);
         setIsLoading(false);
     };
 
     const handleClose = () => {
         resetForm();
         onClose();
+    };
+
+    const normalizePhone = (p: string) => {
+        let clean = p.trim().replace(/\s+/g, '');
+        if (clean.startsWith('09') || clean.startsWith('07')) {
+            return '+251' + clean.substring(1);
+        }
+        if (clean.startsWith('251')) {
+            return '+' + clean;
+        }
+        if (!clean.startsWith('+') && clean.length >= 9) {
+            // Default fallback if it's just numbers
+            return '+' + clean;
+        }
+        return clean;
     };
 
     const toggleField = (fieldValue: string) => {
@@ -79,8 +96,9 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
 
         setIsLoading(true);
         try {
+            const normalizedPhone = normalizePhone(phone);
             await api.post('/verification/request', {
-                phone,
+                phone: normalizedPhone,
                 documentType,
                 accessType,
                 purpose,
@@ -114,20 +132,65 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                 <div className="py-6 space-y-6">
                     {/* Step Indicators */}
                     <div className="flex items-center justify-between px-2">
-                        {[1, 2, 3].map((s) => (
+                        {[1, 2, 3, 4].map((s) => (
                             <div key={s} className="flex items-center gap-2">
                                 <div className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
-                                    step >= s ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-400"
+                                    step >= s ? "bg-indigo-600 text-white" : "bg-zinc-100 text-zinc-400"
                                 )}>
                                     {step > s ? <CheckCircle2 size={16} /> : s}
                                 </div>
-                                {s < 3 && <div className={cn("h-0.5 w-12 transition-colors", step > s ? "bg-blue-600" : "bg-zinc-100")} />}
+                                {s < 4 && <div className={cn("h-0.5 w-8 transition-colors", step > s ? "bg-indigo-600" : "bg-zinc-100")} />}
                             </div>
                         ))}
                     </div>
 
                     {step === 1 && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <Label className="text-xs font-black uppercase tracking-widest text-slate-500">Identity Network</Label>
+                            <div className="grid grid-cols-1 gap-4">
+                                <button
+                                    onClick={() => setSelectedNetwork('allids.one')}
+                                    className={cn(
+                                        "p-5 border-2 rounded-2xl flex items-center gap-4 text-left transition-all hover:scale-[1.01] active:scale-95 shadow-lg shadow-indigo-500/5",
+                                        selectedNetwork === 'allids.one'
+                                            ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20"
+                                            : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg transition-colors",
+                                        selectedNetwork === 'allids.one' ? "bg-indigo-600" : "bg-zinc-400"
+                                    )}>
+                                        <Globe size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className={cn(
+                                            "font-black tracking-tight text-lg transition-colors",
+                                            selectedNetwork === 'allids.one' ? "text-indigo-900 dark:text-indigo-100" : "text-zinc-500"
+                                        )}>allids.one</p>
+                                        <p className="text-xs text-zinc-500 font-bold uppercase tracking-tighter">Global Digital Identity Network</p>
+                                    </div>
+                                    {selectedNetwork === 'allids.one' && <CheckCircle2 className="text-indigo-600" size={24} />}
+                                </button>
+
+                                <button
+                                    disabled
+                                    className="p-5 border border-zinc-100 dark:border-zinc-900 rounded-2xl flex items-center gap-4 text-left opacity-60 grayscaled cursor-not-allowed"
+                                >
+                                    <div className="h-12 w-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-400">
+                                        <Database size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-gray-500 dark:text-gray-600">Local Verification</p>
+                                        <p className="text-xs text-gray-500">Internal Database only</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 2 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="space-y-2">
                                 <Label htmlFor="phone">User's Phone Number (E.164)</Label>
@@ -135,8 +198,8 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                                     <UserSearch className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
                                     <Input
                                         id="phone"
-                                        placeholder="+1234567890"
-                                        className="pl-10"
+                                        placeholder="09... or 251... or +251..."
+                                        className="pl-10 h-12 rounded-xl"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
                                     />
@@ -147,6 +210,7 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                                 <Input
                                     id="purpose"
                                     placeholder="e.g. Loan Application or Check-in"
+                                    className="h-12 rounded-xl"
                                     value={purpose}
                                     onChange={(e) => setPurpose(e.target.value)}
                                 />
@@ -154,7 +218,7 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                         </div>
                     )}
 
-                    {step === 2 && (
+                    {step === 3 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="space-y-2">
                                 <Label>Document Type</Label>
@@ -165,7 +229,7 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                                             onClick={() => setDocumentType(type.value)}
                                             className={cn(
                                                 "p-3 text-xs font-bold border rounded-xl flex flex-col items-center gap-2 transition-all",
-                                                documentType === type.value ? "border-blue-600 bg-blue-50 text-blue-600" : "hover:border-zinc-300"
+                                                documentType === type.value ? "border-indigo-600 bg-indigo-50 text-indigo-600" : "hover:border-zinc-300"
                                             )}
                                         >
                                             <FileText size={20} />
@@ -182,7 +246,7 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                                         onClick={() => setAccessType('FIELDS_ONLY')}
                                         className={cn(
                                             "flex-1 p-3 text-xs font-bold border rounded-xl transition-all",
-                                            accessType === 'FIELDS_ONLY' ? "border-blue-600 bg-blue-50 text-blue-600 shadow-sm" : "text-zinc-500"
+                                            accessType === 'FIELDS_ONLY' ? "border-indigo-600 bg-indigo-50 text-indigo-600 shadow-sm" : "text-zinc-500"
                                         )}
                                     >
                                         KYC (Specific Fields)
@@ -191,7 +255,7 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                                         onClick={() => setAccessType('FULL_DOCUMENT')}
                                         className={cn(
                                             "flex-1 p-3 text-xs font-bold border rounded-xl transition-all",
-                                            accessType === 'FULL_DOCUMENT' ? "border-blue-600 bg-blue-50 text-blue-600 shadow-sm" : "text-zinc-500"
+                                            accessType === 'FULL_DOCUMENT' ? "border-indigo-600 bg-indigo-50 text-indigo-600 shadow-sm" : "text-zinc-500"
                                         )}
                                     >
                                         One-Time (Full Image)
@@ -201,7 +265,7 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                         </div>
                     )}
 
-                    {step === 3 && (
+                    {step === 4 && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                             {accessType === 'FIELDS_ONLY' ? (
                                 <>
@@ -211,7 +275,10 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                                             <Badge
                                                 key={field.value}
                                                 variant={selectedFields.includes(field.value) ? 'default' : 'outline'}
-                                                className="cursor-pointer px-3 py-1.5 transition-all text-xs"
+                                                className={cn(
+                                                    "cursor-pointer px-3 py-1.5 transition-all text-xs",
+                                                    selectedFields.includes(field.value) ? "bg-indigo-600 text-white border-indigo-600" : ""
+                                                )}
                                                 onClick={() => toggleField(field.value)}
                                             >
                                                 {field.label}
@@ -220,14 +287,14 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                                     </div>
                                 </>
                             ) : (
-                                <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 space-y-3">
-                                    <div className="flex items-center gap-2 text-blue-700">
+                                <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100 space-y-3">
+                                    <div className="flex items-center gap-2 text-indigo-700">
                                         <ShieldCheck size={20} />
                                         <span className="font-bold">One-Time Image Access</span>
                                     </div>
-                                    <p className="text-xs text-blue-600/80 leading-relaxed font-medium">
+                                    <p className="text-xs text-indigo-600/80 leading-relaxed font-medium">
                                         You are requesting full image visibility of the user's document.
-                                        Access will be granted for exactly <strong>5 minutes</strong> after the user approves.
+                                        Access will be granted for exactly <strong>5 seconds</strong> after the user approves.
                                     </p>
                                 </div>
                             )}
@@ -241,20 +308,21 @@ export function VerifyRequestModal({ isOpen, onClose }: VerifyRequestModalProps)
                             Back
                         </Button>
                     )}
-                    {step < 3 ? (
+                    {step < 4 ? (
                         <Button
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            className="flex-1 bg-indigo-600 hover:bg-indigo-700 font-bold"
                             onClick={() => setStep(step + 1)}
+                            disabled={step === 1 && !selectedNetwork}
                         >
                             Continue
                         </Button>
                     ) : (
                         <Button
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+                            className="flex-1 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 font-bold"
                             disabled={isLoading}
                             onClick={handleSubmit}
                         >
-                            {isLoading ? "Sending..." : "Send Request"}
+                            {isLoading ? "Initiating Audit..." : "Send Request"}
                         </Button>
                     )}
                 </DialogFooter>

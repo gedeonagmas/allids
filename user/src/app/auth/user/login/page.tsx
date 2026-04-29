@@ -16,6 +16,8 @@ export default function UserLoginPage() {
     const [step, setStep] = useState<"phone" | "otp">("phone");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    const [receivedOtp, setReceivedOtp] = useState<string | null>(null);
+    const [showOtpPopup, setShowOtpPopup] = useState(false);
     const router = useRouter();
     const { refreshUser } = useAuth();
 
@@ -24,7 +26,11 @@ export default function UserLoginPage() {
         setIsLoading(true);
         setError("");
         try {
-            await api.post("/auth/request-otp", { phone });
+            const res = await api.post("/auth/request-otp", { phone });
+            if (res.data?.otp) {
+                setReceivedOtp(res.data.otp);
+                setShowOtpPopup(true);
+            }
             setStep("otp");
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to send OTP. Please check your phone number.");
@@ -126,6 +132,39 @@ export default function UserLoginPage() {
             <p className="mt-8 text-sm text-zinc-500">
                 Don't have an account? Regular users are automatically registered upon first successful OTP.
             </p>
+
+            {/* OTP Notification Popup */}
+            {showOtpPopup && receivedOtp && (
+                <div className="fixed bottom-6 right-6 animate-in slide-in-from-right-4 fade-in duration-300 z-50">
+                    <Card className="p-4 shadow-2xl border-2 border-blue-100 dark:border-blue-900 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md max-w-sm">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600">
+                                <Smartphone size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold">OTP Received</p>
+                                <p className="text-xs text-zinc-500 font-mono">{receivedOtp}</p>
+                            </div>
+                            <Button 
+                                size="sm" 
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
+                                onClick={() => {
+                                    setOtp(receivedOtp);
+                                    setShowOtpPopup(false);
+                                }}
+                            >
+                                Auto-fill
+                            </Button>
+                            <button 
+                                onClick={() => setShowOtpPopup(false)}
+                                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                            >
+                                <Lock size={14} className="opacity-50" />
+                            </button>
+                        </div>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 }

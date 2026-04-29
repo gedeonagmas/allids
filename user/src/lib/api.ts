@@ -27,7 +27,6 @@ api.interceptors.response.use(
     (error) => {
         // Handle session expiry or other global errors here
         if (error.response?.status === 401) {
-            console.error('Session expired or unauthorized');
             // Clear socket token on 401
             if (typeof window !== 'undefined') {
                 document.cookie = 'socket_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';

@@ -10,6 +10,7 @@ import { SocketProvider } from "@/context/socket-context";
 import { VerificationNotification } from "./verification-notification";
 import { Toaster } from "sonner";
 import { PushNotificationManager } from "./push-notification-manager";
+import { ThemeProvider } from "./theme-provider";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -20,14 +21,21 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SocketProvider>
-          {children}
-          <VerificationNotification />
-          <PushNotificationManager />
-          <Toaster richColors position="bottom-right" />
-        </SocketProvider>
-      </AuthProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <AuthProvider>
+          <SocketProvider>
+            {children}
+            <VerificationNotification />
+            <PushNotificationManager />
+            <Toaster richColors position="bottom-right" />
+          </SocketProvider>
+        </AuthProvider>
+      </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

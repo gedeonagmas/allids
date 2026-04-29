@@ -78,10 +78,16 @@ export default function DocumentDetailPage() {
                         <div className="flex items-center gap-3">
                             <h1 className="text-4xl font-black tracking-tight">{document.type.replace(/_/g, ' ')}</h1>
                             {document.status === 'VERIFIED' ? (
-                                <Badge className="bg-green-100 text-green-700 border-0 hover:bg-green-100">
-                                    <CheckCircle2 size={14} className="mr-1" />
-                                    VERIFIED
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge className="bg-green-100 text-green-700 border-0 hover:bg-green-100">
+                                        <CheckCircle2 size={14} className="mr-1" />
+                                        VERIFIED
+                                    </Badge>
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full text-[9px] font-bold tracking-wider border border-blue-100 dark:border-blue-800 uppercase">
+                                        <Shield size={10} />
+                                        Regula
+                                    </div>
+                                </div>
                             ) : document.status === 'REJECTED' ? (
                                 <Badge className="bg-red-100 text-red-700 border-0 hover:bg-red-100">
                                     <AlertCircle size={14} className="mr-1" />
@@ -376,7 +382,7 @@ export default function DocumentDetailPage() {
                     <div className="flex gap-4 items-start">
                         <Shield className="text-blue-600 shrink-0 mt-1" size={24} />
                         <div className="space-y-1">
-                            <p className="font-bold text-sm">Verified by Regula AI</p>
+                            <p className="font-bold text-sm">Verified by Regula ID Verification</p>
                             <p className="text-sm text-zinc-600 dark:text-zinc-400">
                                 This document has been verified using advanced AI-powered document authentication technology.
                                 All sensitive data is encrypted at rest using AES-256 encryption and stored securely.

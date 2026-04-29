@@ -23,6 +23,7 @@ export function VerificationNotification() {
     const [request, setRequest] = useState<any>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingDocs, setIsFetchingDocs] = useState(false);
     const [userDocuments, setUserDocuments] = useState<any[]>([]);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -46,18 +47,36 @@ export function VerificationNotification() {
     }, [socket, user]);
 
     const fetchDocuments = async (docType: string, accessType: string) => {
+        setIsFetchingDocs(true);
         try {
             const res = await api.get('/documents');
-            const filtered = res.data.filter((doc: any) => doc.type === docType);
-            setUserDocuments(filtered);
+            // Support both singular/plural naming (DRIVER_LICENSE vs DRIVERS_LICENSE)
+            const normalizedTargetType = docType.replace(/S$/, '');
 
-            if (filtered.length > 0 && accessType === 'FULL_DOCUMENT') {
-                // Fetch the image for preview
-                const imageRes = await api.get(`/documents/${filtered[0].id}/image`);
+            const filtered = res.data.filter((doc: any) =>
+                doc.type === docType || doc.type === normalizedTargetType
+            );
+
+            if (filtered.length === 0) {
+                setUserDocuments([]);
+                return;
+            }
+
+            const docsWithFields = await Promise.all(filtered.map(async (doc: any) => {
+                const detailRes = await api.get(`/documents/${doc.id}`);
+                return detailRes.data;
+            }));
+
+            setUserDocuments(docsWithFields);
+
+            if (docsWithFields.length > 0 && accessType === 'FULL_DOCUMENT') {
+                const imageRes = await api.get(`/documents/${docsWithFields[0].id}/image`);
                 setPreviewImage(imageRes.data.image);
             }
         } catch (error) {
             console.error('Failed to fetch documents:', error);
+        } finally {
+            setIsFetchingDocs(false);
         }
     };
 
@@ -133,32 +152,83 @@ export function VerificationNotification() {
                                 {request.accessType === 'FIELDS_ONLY' ? 'KYC Data' : 'Full Document View'}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                                {request.accessType === 'FIELDS_ONLY' ? 'Fields only' : 'Visible for 5 minutes'}
+                                {request.accessType === 'FIELDS_ONLY' ? 'Fields only' : 'Visible for 5 seconds'}
                             </span>
                         </div>
                     </div>
 
                     {request.accessType === 'FIELDS_ONLY' && request.fields && request.fields.length > 0 && (
-                        <div className="space-y-2">
-                            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Requested Fields</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {request.fields.map((field: string) => (
-                                    <Badge key={field} variant="outline" className="bg-primary/5">{field}</Badge>
-                                ))}
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Requested Data</h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {request.fields.map((field: string) => {
+                                    const labelMap: Record<string, string> = {
+                                        firstName: 'First Name',
+                                        lastName: 'Last Name',
+                                        documentNumber: 'ID Number',
+                                        dateOfExpiry: 'Expiry Date',
+                                        dateOfBirth: 'Date of Birth',
+                                        sex: 'Gender',
+                                        nationality: 'Nationality'
+                                    };
+
+                                    // Flexible field lookup to handle Regula vs COMMON_FIELDS naming variations
+                                    const findFieldValue = (targetKey: string) => {
+                                        if (isFetchingDocs) return 'Loading...';
+                                        if (!userDocuments[0]?.documentFields) return 'Not Found';
+
+                                        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        const normalizedTarget = normalize(targetKey);
+
+                                        // 1. Try exact or normalized match
+                                        const match = userDocuments[0].documentFields.find((f: any) =>
+                                            normalize(f.fieldKey) === normalizedTarget ||
+                                            f.fieldKey === targetKey
+                                        );
+
+                                        if (match) return match.fieldValue;
+
+                                        // 2. Try partial match
+                                        const partialMatch = userDocuments[0].documentFields.find((f: any) =>
+                                            normalize(f.fieldKey).includes(normalizedTarget) ||
+                                            normalizedTarget.includes(normalize(f.fieldKey))
+                                        );
+
+                                        if (partialMatch) return partialMatch.fieldValue;
+
+                                        // 3. Fallback: return raw key if it looks like a value (unlikely, but for safety)
+                                        return 'N/A';
+                                    };
+
+                                    const value = findFieldValue(field);
+
+                                    return (
+                                        <div key={field} className="flex items-center justify-between p-3 rounded-xl border border-primary/10 bg-primary/5 group transition-all hover:bg-primary/10">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{labelMap[field] || field}</span>
+                                                <span className="text-sm font-black text-primary tracking-tight">{value}</span>
+                                            </div>
+                                            <Badge variant="outline" className="text-[9px] bg-background border-primary/20">Sharing</Badge>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
 
                     <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Sharing Document</h4>
+                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Identity Document</h4>
                         <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/20">
                             <FileText className="w-5 h-5 text-primary" />
-                            <div>
-                                <p className="text-sm font-medium uppercase">{request.documentType.replace(/_/g, ' ')}</p>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold uppercase">{request.documentType.replace(/_/g, ' ')}</p>
                                 {userDocuments.length > 0 ? (
-                                    <p className="text-xs text-green-600 flex items-center gap-1">
-                                        <UserCheck className="w-3 h-3" /> Ready to share
-                                    </p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs text-green-600 flex items-center gap-1">
+                                            <UserCheck className="w-3 h-3" /> Ready to share
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground font-mono">ID: ...{userDocuments[0].id.slice(-6)}</p>
+                                    </div>
                                 ) : (
                                     <p className="text-xs text-red-500 flex items-center gap-1">
                                         <ShieldAlert className="w-3 h-3" /> No matching document in wallet
@@ -170,14 +240,14 @@ export function VerificationNotification() {
                         {request?.accessType === 'FULL_DOCUMENT' && previewImage && (
                             <div className="mt-2 relative group">
                                 <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-tight">Your Document Preview</p>
-                                <div className="rounded-xl overflow-hidden border border-primary/20 bg-black aspect-[1.6/1] flex items-center justify-center relative">
+                                <div className="rounded-xl overflow-hidden border border-primary/20 bg-white aspect-[1.6/1] flex items-center justify-center relative">
                                     <img
                                         src={previewImage}
                                         alt="Preview"
                                         className="max-h-full max-w-full object-contain"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-                                        <Badge variant="outline" className="text-white border-white/20 bg-black/40 backdrop-blur-sm text-[10px]">
+                                        <Badge variant="outline" className="!text-green-500 font-black border-white/20 bg-black/40 backdrop-blur-sm text-[10px]">
                                             Secure Preview
                                         </Badge>
                                     </div>

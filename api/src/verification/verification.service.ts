@@ -13,6 +13,7 @@ import { AccessType, AccessRequestStatus, AuditAction } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { decrypt } from '../utils/encryption.util';
 import { retrieveEncryptedDocument } from '../utils/file-storage.util';
+import { normalizePhoneNumber } from '../utils/phone.util';
 
 @Injectable()
 export class VerificationService {
@@ -24,7 +25,8 @@ export class VerificationService {
     ) { }
 
     async requestVerification(orgId: string, dto: RequestVerificationDto) {
-        const { phone, documentType, accessType, purpose, fields } = dto;
+        const phone = normalizePhoneNumber(dto.phone);
+        const { documentType, accessType, purpose, fields } = dto;
 
         // 1. Find user by phone
         const user = await this.prisma.user.findUnique({
@@ -106,7 +108,7 @@ export class VerificationService {
         // 3. Create PermissionGrant
         const expiryMinutes = parseInt(process.env.ONE_TIME_REQUEST_SESSION_EXPIRED_TIME || '5', 10);
         const expiresAt = request.accessType === 'FULL_DOCUMENT'
-            ? new Date(Date.now() + expiryMinutes * 60 * 1000)
+            ? new Date(Date.now() + expiryMinutes * 5 * 1000)
             : null;
 
         const grant = await this.prisma.permissionGrant.create({
@@ -225,6 +227,16 @@ export class VerificationService {
                 action: 'GRANT_REVOKED',
             },
         });
+
+        // Notify Organization in real-time
+        await this.notification.notify(grant.organizationId, 'grant_revoked', {
+            title: 'Access Revoked',
+            message: 'A user has revoked your permission to view their data.',
+            payload: {
+                grantId: grant.id,
+                requestId: grant.accessRequestId,
+            },
+        }, 'org');
 
         return { message: 'Permission revoked successfully' };
     }

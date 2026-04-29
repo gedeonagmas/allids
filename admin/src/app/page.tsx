@@ -9,6 +9,7 @@ import { Card } from "../components/ui/card";
 import { useAuth } from "@/context/auth-context";
 import { LogOut, Users, Shield, RefreshCcw, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const fetchUsers = async () => {
   const response = await api.get('/users');
@@ -61,10 +62,10 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{user.username}</p>
               <p className="text-xs text-zinc-500 uppercase tracking-tighter">System Administrator</p>
             </div>
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={logout} className="text-zinc-500 hover:text-red-600">
               <LogOut size={18} />
             </Button>

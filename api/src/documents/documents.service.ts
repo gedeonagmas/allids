@@ -363,19 +363,25 @@ export class DocumentsService {
    * Checks multiple possible field names that Regula might return
    */
   private extractIssuerCountry(result: RegulaVerificationResult): string | null {
+    this.logger.debug(`Extracting issuer country from ${result.fields.length} fields`);
+    
     // Try multiple possible field names in order of preference
     const possibleFieldNames = [
       'issuerCountry',
-      'countryOfIssue',
       'issuingCountry',
+      'countryOfIssue',
+      'nationality',
       'country',
       'issuer',
     ];
 
     for (const fieldName of possibleFieldNames) {
-      const field = result.fields.find((f) =>
-        f.fieldName.toLowerCase() === fieldName.toLowerCase()
-      );
+      const field = result.fields.find((f) => {
+        const match = f.fieldName.toLowerCase() === fieldName.toLowerCase();
+        if (match) this.logger.debug(`Found match for issuer country: ${fieldName} = ${f.value}`);
+        return match;
+      });
+      
       if (field?.value) {
         return field.value;
       }
