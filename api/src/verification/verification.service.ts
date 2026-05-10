@@ -204,6 +204,21 @@ export class VerificationService {
         }
     }
 
+    async getPendingRequests(userId: string) {
+        return this.prisma.accessRequest.findMany({
+            where: {
+                userId,
+                status: 'PENDING',
+            },
+            include: {
+                organization: {
+                    select: { name: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
     async revokeGrant(userId: string, grantId: string) {
         const grant = await this.prisma.permissionGrant.findUnique({
             where: { id: grantId },
@@ -239,6 +254,30 @@ export class VerificationService {
         }, 'org');
 
         return { message: 'Permission revoked successfully' };
+    }
+
+    async getUserAuditLogs(userId: string) {
+        return this.prisma.auditLog.findMany({
+            where: {
+                permissionGrant: {
+                    userId: userId,
+                },
+            },
+            include: {
+                permissionGrant: {
+                    include: {
+                        organization: {
+                            select: { name: true },
+                        },
+                        document: {
+                            select: { type: true },
+                        },
+                    },
+                },
+            },
+            orderBy: { timestamp: 'desc' },
+            take: 50,
+        });
     }
 
     async getGrantData(orgId: string, grantId: string) {

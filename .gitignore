@@ -5,3 +5,4 @@ coverage/
 .env
 .pnpm-store/
 pnpm-node-modules/
+wowdash-template

@@ -71,4 +71,14 @@ export class VerificationController {
     ) {
         return this.verificationService.revokeGrant(user.id, grantId);
     }
+
+    @Get('requests')
+    async getPendingRequests(@CurrentUser() user: any) {
+        return this.verificationService.getPendingRequests(user.id);
+    }
+
+    @Get('audit')
+    async getAuditLogs(@CurrentUser() user: any) {
+        return this.verificationService.getUserAuditLogs(user.id);
+    }
 }

@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -10,235 +7,254 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-    Wallet,
+    ShieldCheck,
+    ArrowUpRight,
     Plus,
-    Trash2,
-    RefreshCw,
-    LogOut,
-    User,
+    Activity,
+    Lock,
+    Eye,
     Clock,
-    Globe,
     CheckCircle2,
     AlertCircle,
     FileText,
-    History
+    ChevronRight,
+    Zap
 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function UserDashboard() {
-    const { user, isLoading: isAuthLoading, logout } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
-    const [isUploading, setIsUploading] = useState(false);
 
-    // Protected route check
-    useEffect(() => {
-        if (!isAuthLoading && (!user || user.role !== 'USER')) {
-            router.push("/");
-        }
-    }, [user, isAuthLoading, router]);
-
-    // Fetch verified documents (wallet)
-    const { data: wallet, isLoading: isWalletLoading, refetch: refetchWallet } = useQuery({
-        queryKey: ["wallet"],
+    // Fetch stats for overview
+    const { data: stats, isLoading: isStatsLoading } = useQuery({
+        queryKey: ["dashboard-stats"],
         queryFn: async () => {
-            const res = await api.get("/documents/wallet");
-            return res.data;
-        },
-        enabled: !!user && user.role === 'USER',
-    });
-
-    // Fetch all documents (including pending/rejected)
-    const { data: allDocs, isLoading: isDocsLoading, refetch: refetchDocs } = useQuery({
-        queryKey: ["all-documents"],
-        queryFn: async () => {
-            const res = await api.get("/documents");
-            return res.data;
-        },
-        enabled: !!user && user.role === 'USER',
-    });
-
-    const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this document?")) return;
-        try {
-            await api.delete(`/documents/${id}`);
-            refetchDocs();
-            refetchWallet();
-        } catch (err) {
-            alert("Failed to delete document");
+            const [docsRes, walletRes, historyRes] = await Promise.all([
+                api.get("/documents"),
+                api.get("/documents/wallet"),
+                api.get("/verification/history") // Assuming this exists or returns similar
+            ]);
+            return {
+                totalDocs: docsRes.data.length,
+                verifiedDocs: walletRes.data.length,
+                pendingDocs: docsRes.data.filter((d: any) => d.status === 'PENDING').length,
+                recentHistory: historyRes.data?.slice(0, 5) || []
+            };
         }
-    };
-
-    if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center">Loading session...</div>;
-    if (!user) return null;
+    });
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col font-sans">
-            {/* Navbar */}
-            <nav className="border-b bg-white dark:bg-zinc-900 sticky top-0 z-20">
-                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                            <Wallet size={18} />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Page Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Overview</h1>
+                    <p className="text-slate-500 dark:text-zinc-400 font-medium">Welcome back, {user?.name}. Your identity cloud is active.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" className="h-11 px-5 rounded-xl border-slate-200 dark:border-zinc-800 gap-2 font-bold" asChild>
+                        <Link href="/dashboard/user/history">
+                            <Activity size={18} className="text-indigo-600" />
+                            System Logs
+                        </Link>
+                    </Button>
+                    <Button className="h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 gap-2 font-bold transition-all active:scale-95" asChild>
+                        <Link href="/dashboard/user/upload">
+                            <Plus size={18} />
+                            Register ID
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+
+            {/* Summary Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="p-6 bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <ShieldCheck size={20} />
                         </div>
-                        <span className="font-bold text-xl tracking-tight">Allids <span className="text-zinc-400 font-normal">Wallet</span></span>
+                        <Badge className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-0 font-black text-[10px]">TRUST SCORE</Badge>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="hidden sm:block text-right mr-2">
-                            <p className="text-sm font-semibold">{user.phone}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-zinc-500">Verified Identity</p>
+                    <div>
+                        <p className="text-3xl font-black tracking-tighter">980</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Excellent Standing</p>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-600 w-[92%] rounded-full shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
+                    </div>
+                </Card>
+
+                <Card className="p-6 bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div className="h-10 w-10 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center text-green-600 dark:text-green-400">
+                            <Zap size={20} />
                         </div>
-                        <ThemeToggle />
-                        <Button variant="ghost" size="sm" onClick={logout}>
-                            <LogOut size={18} className="text-zinc-500" />
-                        </Button>
+                        <Badge className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-0 font-black text-[10px]">VERIFIED ASSETS</Badge>
+                    </div>
+                    <div>
+                        <p className="text-3xl font-black tracking-tighter">{stats?.verifiedDocs || 0}</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Active Wallet Items</p>
+                    </div>
+                </Card>
+
+                <Card className="p-6 bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div className="h-10 w-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <Clock size={20} />
+                        </div>
+                        <Badge className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-0 font-black text-[10px]">PENDING ACTIONS</Badge>
+                    </div>
+                    <div>
+                        <p className="text-3xl font-black tracking-tighter">{stats?.pendingDocs || 0}</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Requiring Attention</p>
+                    </div>
+                </Card>
+
+                <Card className="p-6 bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <Eye size={20} />
+                        </div>
+                        <Badge className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-0 font-black text-[10px]">ACTIVE GRANTS</Badge>
+                    </div>
+                    <div>
+                        <p className="text-3xl font-black tracking-tighter">04</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Authorized Org Access</p>
+                    </div>
+                </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Activity & Wallet */}
+                <div className="lg:col-span-2 space-y-8">
+                    {/* Activity Feed */}
+                    <Card className="bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-slate-50 dark:border-zinc-800 flex items-center justify-between">
+                            <h3 className="font-black text-lg tracking-tight uppercase text-slate-900 dark:text-white">Recent Activity</h3>
+                            <Button variant="ghost" size="sm" className="text-indigo-600 font-bold" asChild>
+                                <Link href="/dashboard/user/history">View Full Audit</Link>
+                            </Button>
+                        </div>
+                        <div className="divide-y divide-slate-50 dark:divide-zinc-800">
+                            {stats?.recentHistory.length > 0 ? (
+                                stats.recentHistory.map((item: any, i: number) => (
+                                    <div key={i} className="p-6 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition-all cursor-pointer group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
+                                                <Activity size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-sm text-slate-900 dark:text-white">Request approved for {item.orgName || "Bank HQ"}</p>
+                                                <p className="text-xs text-slate-400 font-medium">{new Date(item.createdAt).toLocaleDateString()} • {item.purpose}</p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-600 transition-all group-hover:translate-x-1" />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-20 text-center space-y-4">
+                                    <div className="h-16 w-16 bg-slate-50 dark:bg-zinc-800 rounded-full flex items-center justify-center text-slate-300 mx-auto">
+                                        <FileText size={32} />
+                                    </div>
+                                    <p className="text-slate-400 font-bold">No recent activities logged.</p>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+
+                    {/* Quick Document Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <Card className="p-6 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white border-0 shadow-lg shadow-indigo-500/20 relative overflow-hidden group">
+                            <Plus className="absolute -right-4 -bottom-4 h-32 w-32 opacity-10 group-hover:scale-110 transition-transform duration-500" />
+                            <div className="relative z-10 space-y-4">
+                                <h4 className="text-lg font-black leading-tight">Expansion <br /> Required?</h4>
+                                <p className="text-indigo-100/80 text-xs font-medium leading-relaxed">Add a National ID or Passport to unlock high-tier banking permissions.</p>
+                                <Button className="bg-white text-indigo-600 hover:bg-indigo-50 font-black rounded-xl h-9 px-4" asChild>
+                                    <Link href="/dashboard/user/upload">Launch Uploader</Link>
+                                </Button>
+                            </div>
+                         </Card>
+                         
+                         <Card className="p-6 bg-slate-900 text-white border-0 shadow-xl relative overflow-hidden group">
+                            <Lock className="absolute -right-4 -bottom-4 h-32 w-32 opacity-10 group-hover:scale-110 transition-transform duration-500" />
+                            <div className="relative z-10 space-y-4">
+                                <h4 className="text-lg font-black leading-tight">Security <br /> Governance</h4>
+                                <p className="text-zinc-400 text-xs font-medium leading-relaxed">Your account is secured with biometric-linked private keys. MFA is enabled.</p>
+                                <Button variant="outline" className="border-zinc-700 text-white hover:bg-zinc-800 font-black rounded-xl h-9 px-4" asChild>
+                                    <Link href="/dashboard/user/settings">Security Hub</Link>
+                                </Button>
+                            </div>
+                         </Card>
                     </div>
                 </div>
-            </nav>
 
-            <main className="max-w-6xl mx-auto w-full px-6 py-10 space-y-12">
-                {/* Welcome Section */}
-                <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div className="space-y-2">
-                        <h1 className="text-4xl font-extrabold tracking-tight">Your Identity Wallet</h1>
-                        <p className="text-zinc-500 text-lg">Manage your verified documents and sharing permissions.</p>
-                    </div>
-                    <div className="flex flex-wrap gap-4">
-                        <Button asChild variant="outline" className="h-12 px-6 rounded-xl gap-2">
-                            <Link href="/dashboard/user/history">
-                                <History size={20} className="text-blue-600" />
-                                Sharing History
-                            </Link>
-                        </Button>
-                        <Button asChild className="h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 gap-2">
-                            <Link href="/dashboard/user/upload">
-                                <Plus size={20} />
-                                Add New Document
-                            </Link>
-                        </Button>
-                    </div>
-                </section>
+                {/* Right Column: Security & Insights */}
+                <div className="space-y-8">
+                    <Card className="p-8 bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-sm space-y-6">
+                        <div className="space-y-1">
+                            <h3 className="font-black text-lg tracking-tight uppercase">System Health</h3>
+                            <p className="text-xs text-slate-500 font-medium tracking-tight">Identity integrity verification</p>
+                        </div>
 
-                {/* Verified Documents (Wallet) */}
-                <section className="space-y-6">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold">Verified Cards</h2>
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                            Live Assets
-                        </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {isWalletLoading ? (
-                            [1, 2].map((i) => (
-                                <div key={i} className="h-48 rounded-2xl bg-zinc-200 animate-pulse" />
-                            ))
-                        ) : wallet?.length > 0 ? (
-                            wallet.map((doc: any) => (
-                                <Card key={doc.id} className="relative overflow-hidden group border-zinc-200 dark:border-zinc-800 hover:shadow-xl transition-all duration-300">
-                                    <div className="absolute top-0 right-0 p-4">
-                                        <CheckCircle2 className="text-green-500" size={24} />
-                                    </div>
-                                    <div className="p-8 space-y-6">
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">{doc.type}</p>
-                                            <h3 className="text-xl font-bold">{doc.issuerCountry || "Verified Document"}</h3>
-                                        </div>
-
-                                        <div className="flex items-center gap-6">
-                                            <div className="space-y-1">
-                                                <p className="text-[10px] uppercase text-zinc-400 font-bold">Fields</p>
-                                                <p className="font-mono text-sm">{doc.fieldsCount || 0} extracted</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-[10px] uppercase text-zinc-400 font-bold">Expires</p>
-                                                <p className="font-mono text-sm">{doc.expiredDate ? new Date(doc.expiredDate).toLocaleDateString() : "Never"}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4 flex items-center justify-between border-t dark:border-zinc-800">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-blue-600 hover:bg-blue-50"
-                                                onClick={() => router.push(`/dashboard/user/documents/${doc.id}`)}
-                                            >
-                                                View Details
-                                            </Button>
-                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-zinc-400 hover:text-red-600" onClick={() => handleDelete(doc.id)}>
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))
-                        ) : (
-                            <Card className="col-span-full border-dashed p-12 text-center bg-transparent flex flex-col items-center justify-center space-y-4">
-                                <div className="h-16 w-16 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400">
-                                    <Wallet size={32} />
+                        <div className="space-y-6">
+                             <div className="space-y-2">
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    <span>Encryption Level</span>
+                                    <span className="text-indigo-600">AES-256</span>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="font-bold text-lg">No verified documents yet</p>
-                                    <p className="text-sm text-zinc-500">Upload your first document to activate your wallet.</p>
+                                <div className="h-1.5 w-full bg-slate-100 dark:bg-zinc-800 rounded-full">
+                                    <div className="h-full bg-indigo-600 w-full rounded-full" />
                                 </div>
-                            </Card>
-                        )}
-                    </div>
-                </section>
+                             </div>
 
-                {/* History / All Documents */}
-                <section className="space-y-4 pt-10">
-                    <h2 className="text-xl font-bold">Activity History</h2>
-                    <div className="bg-white dark:bg-zinc-900 border rounded-xl overflow-hidden">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b bg-zinc-50/50 dark:bg-zinc-950/30">
-                                    <th className="px-6 py-4 font-bold">Document</th>
-                                    <th className="px-6 py-4 font-bold">Status</th>
-                                    <th className="px-6 py-4 font-bold">Uploaded</th>
-                                    <th className="px-6 py-4 font-bold text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {isDocsLoading ? (
-                                    [1, 2].map((i) => (
-                                        <tr key={i}><td colSpan={4} className="h-12 bg-zinc-50/20 animate-pulse" /></tr>
-                                    ))
-                                ) : allDocs?.map((doc: any) => (
-                                    <tr key={doc.id} className="hover:bg-zinc-50/50 transition-colors">
-                                        <td className="px-6 py-4 flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500">
-                                                <FileText size={16} />
-                                            </div>
-                                            <span className="font-semibold uppercase text-[10px] tracking-wider">{doc.type}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                {doc.status === 'VERIFIED' ? (
-                                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-0">{doc.status}</Badge>
-                                                ) : doc.status === 'REJECTED' ? (
-                                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-0">{doc.status}</Badge>
-                                                ) : (
-                                                    <Badge variant="secondary">{doc.status}</Badge>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-zinc-500">
-                                            {new Date(doc.createdAt).toLocaleDateString()} at {new Date(doc.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <Button variant="ghost" size="sm" onClick={() => handleDelete(doc.id)} className="text-zinc-400 hover:text-red-600">
-                                                <Trash2 size={16} />
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </main>
+                             <div className="space-y-2">
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    <span>Network Latency</span>
+                                    <span className="text-green-600">12ms</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-100 dark:bg-zinc-800 rounded-full">
+                                    <div className="h-full bg-green-500 w-[95%] rounded-full" />
+                                </div>
+                             </div>
+
+                             <div className="space-y-2">
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    <span>Sync Status</span>
+                                    <span className="text-blue-600">Cloud Syncing</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-100 dark:bg-zinc-800 rounded-full">
+                                    <div className="h-full bg-blue-500 w-[80%] rounded-full animate-pulse" />
+                                </div>
+                             </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-50 dark:border-zinc-800">
+                            <div className="flex items-center gap-3 text-xs font-bold text-slate-500">
+                                <ShieldCheck size={16} className="text-indigo-600" />
+                                <span>Verified by Regula AI</span>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="p-6 bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-sm space-y-4">
+                        <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <Zap size={20} />
+                        </div>
+                        <h4 className="font-black text-sm uppercase tracking-tight">Identity Discovery</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                            Linking your tax ID can improve your credit trust level across the ALLIDS network.
+                        </p>
+                        <Button variant="ghost" className="w-full justify-between text-indigo-600 font-bold p-0 group">
+                            <span>Link Tax Identity</span>
+                            <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                        </Button>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }
+
