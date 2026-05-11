@@ -1,35 +1,52 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+
+import { cn } from "@/lib/utils";
+import { color, rounded } from "@/lib/type";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border border-zinc-200 px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2 dark:border-zinc-800 dark:focus:ring-zinc-300",
+  "inline-flex items-center rounded-md border py-1 px-2 text-xs  capitalize font-semibold  transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
-      variant: {
-        default:
-          "border-transparent bg-zinc-900 text-zinc-50 hover:bg-zinc-900/80 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/80",
-        secondary:
-          "border-transparent bg-zinc-100 text-zinc-900 hover:bg-zinc-100/80 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-800/80",
-        destructive:
-          "border-transparent bg-red-500 text-zinc-50 hover:bg-red-500/80 dark:bg-red-900 dark:text-zinc-50 dark:hover:bg-red-900/80",
-        outline: "text-zinc-950 dark:text-zinc-50",
+      color: {
+        default: "border-transparent bg-default text-default-foreground",
+        primary: "border-transparent bg-primary text-primary-foreground",
+        secondary: "bg-secondary border-transparent text-secondary-foreground ",
+        destructive: "bg-destructive border-transparent text-destructive-foreground",
+        success: "bg-success border-transparent  text-success-foreground ",
+        info: "bg-info border-transparent text-info-foreground ",
+        warning: "bg-warning  border-transparent text-warning-foreground",
       },
+      rounded: {
+        sm: "rounded",
+        md: "rounded-md",
+        lg: "rounded-lg",
+        full: "rounded-full",
+      }
     },
+
     defaultVariants: {
-      variant: "default",
+      color: "default",
+      rounded: "md",
     },
   }
-)
-
+);
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-  VariantProps<typeof badgeVariants> { }
+  VariantProps<typeof badgeVariants> {
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return (
-    <div className={cn(badgeVariants({ variant, className }))} {...props} />
-  )
+  color?: color;
+  rounded?: rounded;
 }
 
-export { Badge, badgeVariants }
+
+function Badge({ className, color, rounded, ...props }: BadgeProps) {
+  return (
+    <div
+      className={cn(badgeVariants({ color, rounded }), className)}
+      {...props}
+    />
+  );
+}
+
+export { Badge, badgeVariants };

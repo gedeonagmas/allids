@@ -11,6 +11,7 @@ import { VerificationNotification } from "./verification-notification";
 import { Toaster } from "sonner";
 import { PushNotificationManager } from "./push-notification-manager";
 import { ThemeProvider } from "./theme-provider";
+import { Provider as JotaiProvider } from "jotai";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -21,21 +22,23 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <AuthProvider>
-          <SocketProvider>
-            {children}
-            <VerificationNotification />
-            <PushNotificationManager />
-            <Toaster richColors position="bottom-right" />
-          </SocketProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <JotaiProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <SocketProvider>
+              {children}
+              <VerificationNotification />
+              <PushNotificationManager />
+              <Toaster richColors position="bottom-right" />
+            </SocketProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </JotaiProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
