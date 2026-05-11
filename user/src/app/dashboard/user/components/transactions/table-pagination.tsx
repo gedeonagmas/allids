@@ -9,14 +9,14 @@ interface DataTablePaginationProps {
 
 const TablePagination = ({ table }: DataTablePaginationProps) => {
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between p-4 gap-4">
-      <div className="flex-1 text-sm text-muted-foreground">
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
+    <div className="flex flex-col sm:flex-row items-center justify-between p-4 gap-4 border-t border-default-100">
+      <div className="flex-1 text-xs font-bold text-default-500 uppercase tracking-widest">
+        Showing {table.getFilteredRowModel().rows.length} record(s)
       </div>
       <div className="flex items-center gap-1 md:gap-2 flex-none">
         <Button
           variant="outline"
+          color="secondary"
           size="icon"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
@@ -29,7 +29,9 @@ const TablePagination = ({ table }: DataTablePaginationProps) => {
             key={`basic-data-table-${pageIndex}`}
             onClick={() => table.setPageIndex(pageIndex)}
             size="icon"
-            className={`w-8 h-8 hover:text-primary-foreground ${table.getState().pagination.pageIndex === pageIndex ? 'bg-default' : 'bg-default-300 text-default'}`}
+            color={table.getState().pagination.pageIndex === pageIndex ? 'primary' : 'secondary'}
+            variant={table.getState().pagination.pageIndex === pageIndex ? 'default' : 'outline'}
+            className="w-8 h-8 font-bold"
           >
             {page + 1}
           </Button>
@@ -37,6 +39,7 @@ const TablePagination = ({ table }: DataTablePaginationProps) => {
         ))}
         <Button
           variant="outline"
+          color="secondary"
           size="icon"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}

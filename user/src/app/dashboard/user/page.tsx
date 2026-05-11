@@ -165,7 +165,7 @@ export default function UserDashboard() {
                           <p className="text-[11px] text-default-500 font-medium truncate max-w-[150px]">{item.purpose}</p>
                         </div>
                       </div>
-                      <Badge className="text-[9px] font-bold px-2 py-0 h-5 border-default-200">ACTIVE</Badge>
+                      <Badge color="success" className="text-[10px] font-bold px-2 py-0 h-5 border-transparent">ACTIVE</Badge>
                     </div>
                   ))
                 ) : (
@@ -176,7 +176,6 @@ export default function UserDashboard() {
                 )}
              </div>
              
-             {/* Pagination for Access Requests - Exact Match with Transactions Style */}
              <div className="flex flex-col sm:flex-row items-center justify-between p-4 gap-4 border-t border-default-100 bg-default-50/30 rounded-b-xl">
                 <div className="flex-1 text-xs font-bold text-default-500 uppercase tracking-widest">
                    Page 1 of 1
@@ -184,25 +183,28 @@ export default function UserDashboard() {
                 <div className="flex items-center gap-1 md:gap-2 flex-none">
                    <Button
                       variant="outline"
+                      color="secondary"
                       size="icon"
                       disabled
-                      className='w-8 h-8 bg-white border-default-200'
+                      className='w-8 h-8'
                    >
                       <ChevronLeft className='w-4 h-4' />
                    </Button>
                    
                    <Button
                       size="icon"
-                      className="w-8 h-8 bg-default text-white hover:bg-default/90"
+                      color="primary"
+                      className="w-8 h-8 font-bold"
                    >
                       1
                    </Button>
 
                    <Button
                       variant="outline"
+                      color="secondary"
                       size="icon"
                       disabled
-                      className='w-8 h-8 bg-white border-default-200'
+                      className='w-8 h-8'
                    >
                       <ChevronRight className='w-4 h-4' />
                    </Button>
