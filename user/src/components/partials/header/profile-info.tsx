@@ -21,7 +21,7 @@ const ProfileInfo = () => {
   if (!user) return null;
 
   return (
-    <div className="md:block hidden">
+    <div className="block">
       <DropdownMenu>
         <DropdownMenuTrigger asChild className="cursor-pointer outline-none">
           <div className="flex items-center gap-2.5 text-default-800 border border-default-200 rounded-full py-1.5 px-2.5 hover:bg-default-50 hover:border-primary/30 transition-all shadow-sm group">
