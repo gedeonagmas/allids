@@ -5,4 +5,6 @@ coverage/
 .env
 .pnpm-store/
 pnpm-node-modules/
+dashcode/
+dashcode
 wowdash-template
